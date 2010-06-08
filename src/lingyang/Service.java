@@ -32,4 +32,6 @@ public interface Service {
 	public void _addReadBytes(long readBytes);
 
 	public void _addWriteBytes(long writeBytes);
+	
+	public boolean isRunning();
 }

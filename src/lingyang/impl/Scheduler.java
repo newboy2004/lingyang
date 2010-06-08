@@ -13,13 +13,8 @@ import lingyang.Session;
 
 public class Scheduler implements Runnable {
 	public static class ScheduleEvent{
-		public static enum Type{
-			timeout,schedule;
-		}
-		Type type;
 		List<Object> params=null;
-		public ScheduleEvent(Type type,Object... param){
-			this.type=type;
+		public ScheduleEvent(Object... param){
 			for(Object o:param){
 				if(params==null){
 					params=new ArrayList<Object>();
@@ -43,7 +38,7 @@ public class Scheduler implements Runnable {
 	
 	BlockingQueue<ScheduleEvent> eventQueue=new LinkedBlockingQueue<ScheduleEvent>();
 	
-	long timeout=60*1000;
+	long timeout=-1;//60*1000;
 	public Scheduler(Service service, Schedule schedule,long timeout) {
 		this.contextService=service;
 		this.schedule=schedule;
@@ -51,10 +46,14 @@ public class Scheduler implements Runnable {
 	}
 
 	public void run() {
-		while(true){
+		while(contextService!=null&&contextService.isRunning()){
 			ScheduleEvent event=null;
 			try {
-				event=eventQueue.poll(timeout, TimeUnit.MILLISECONDS);
+				if(timeout<0){
+					event=eventQueue.poll();
+				}else{		
+					event=eventQueue.poll(timeout, TimeUnit.MILLISECONDS);
+				}
 			} catch (InterruptedException e) {
 				return;
 			}

@@ -177,7 +177,10 @@ public class FlowService implements Service {
 	public void _addWriteBytes(long writeBytes) {
 		serviceStatistic.totalSendBytes+=writeBytes;
 	}
-
+	@Override
+	public boolean isRunning() {
+		return this._run;
+	}
 	@Override
 	public ServiceStatistic shutDown() {
 		_run=false;
@@ -407,4 +410,6 @@ public class FlowService implements Service {
 			} while (_run);
 		}
 	}
+
+
 }
