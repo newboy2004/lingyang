@@ -6,35 +6,35 @@ import lingyang.Event;
 import lingyang.Session;
 import lingyang.configure.Configure;
 
-
+@Deprecated
 public class PoolWorker implements Runnable {
 	SelectionKey key;
 	private Configure configure;
 
 	public PoolWorker(SelectionKey key, Configure configure) {
-		this.key = key;
-		this.configure = configure;
-		Session session = (Session) key.attachment();
-		session.hangUp(this);
+//		this.key = key;
+//		this.configure = configure;
+//		Session session = (Session) key.attachment();
+//		session.hangUp(this);
 	}
 
 	public void run() {
-		Session session = (Session) key.attachment();
-		if (this != session.peekHeadWorker()) {
-			return;
-		}
-		try {
-			session.getPoolSemaphore().acquire();
-			while (true) {
-				PoolWorker worker = (PoolWorker) session.poolHeadWorker();
-				if (worker == null) {
-					break;
-				}
-				worker.work();
-			}
-			session.getPoolSemaphore().release();
-		} catch (InterruptedException e) {
-		}
+//		Session session = (Session) key.attachment();
+//		if (this != session.peekHeadWorker()) {
+//			return;
+//		}
+//		try {
+//			session.getPoolSemaphore().acquire();
+//			while (true) {
+//				PoolWorker worker = (PoolWorker) session.poolHeadWorker();
+//				if (worker == null) {
+//					break;
+//				}
+//				worker.work();
+//			}
+//			session.getPoolSemaphore().release();
+//		} catch (InterruptedException e) {
+//		}
 	}
 
 	private void work() {

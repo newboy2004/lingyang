@@ -7,12 +7,15 @@ import java.nio.channels.SocketChannel;
 
 import lingyang.ChannelVisitor;
 import lingyang.Event;
+import lingyang.NoSession;
 import lingyang.Processor;
 import lingyang.Session;
+import lingyang.Factory.BufferProvider;
+import lingyang.configure.Configure;
 import lingyang.err.ChannelException;
 
-
 public class SimpleProcessor extends Processor {
+	BufferProvider bufferProvider = new BufferProvider();
 
 	@Override
 	public void onConnect(Session session) {
@@ -21,75 +24,98 @@ public class SimpleProcessor extends Processor {
 
 	@Override
 	public void onCreate(Session session) {
-
 		session.getConfigure().getHeadFilter().onEvent(session, Event.create);
 	}
 
 	@Override
 	public void onIdle(Session session) {
-
 		session.getConfigure().getHeadFilter().onEvent(session, Event.idle);
 	}
 
 	@Override
-	public void onRecive(Session session) {	
+	public void onClose(Session session) {
+		session.getConfigure().getHeadFilter().onEvent(session, Event.close);
+	}
+	@Override
+	public void onNoSession(Configure configure, NoSession noSessionEvent) {
+		configure.getHeadFilter().onNoSession(noSessionEvent);
+	}
+	@Override
+	public void onRecive(Session session) {
+		try {
+			ByteBuffer btbuffer = (ByteBuffer) session.acceptVisitor(this,
+					ChannelVisitor.Type.read);
+			session.getConfigure().getHeadFilter().in(session, btbuffer);
+			bufferProvider.release(btbuffer);
+		} catch (ChannelException e) {
+			session.getConfigure().getHeadFilter().onEvent(session, Event.err);
+		}
 
-			ByteBuffer btbuffer;
-			try {
-				btbuffer = (ByteBuffer)session.acceptVisitor(this,ChannelVisitor.Type.read);
-				session.getConfigure().getHeadFilter().in(session, btbuffer);	
-			} catch (ChannelException e) {
-				session.getConfigure().getHeadFilter().onEvent(session, Event.err);
-			}
-			
 	}
 
 	@Override
 	public void onWriteble(Session session) {
 		session.getConfigure().getTailFilter().out(session, null);
+		try {
+			int bytes = (Integer) session.acceptVisitor(this,
+					ChannelVisitor.Type.write);
+		} catch (ChannelException e) {
+			session.getConfigure().getHeadFilter().onEvent(session, Event.err);
+		}
 
 	}
 
 	@Override
-	public Object visit(Session session, SocketChannel socketChannel, ChannelVisitor.Type type) throws ChannelException {
+	public Object visit(Session session, SocketChannel socketChannel,
+			ChannelVisitor.Type type) throws ChannelException {
 		switch (type) {
 		case read:
-			ByteBuffer btb = session.getBuffer(session.getConfigure().getBufferSize());
-			btb.reset();
+			ByteBuffer btb = bufferProvider.alloc(session.getConfigure()
+					.getBufferSize());
+			btb.clear();
 			try {
 				socketChannel.read(btb);
 				btb.flip();
+				session.updateReadTime();
+				session.updateWriteBytes(btb.remaining());
 				return btb;
 			} catch (IOException e) {
 				throw new ChannelException();
 			}
 		case write:
-			int writed=0;
-			while(true){			
-				ByteBuffer bb=session.peekWriteQueue();	
-				if(bb==null){
-					session.getSelectionKey().interestOps(session.getSelectionKey().interestOps() & (~SelectionKey.OP_WRITE));
+			int writed = 0;
+			while (true) {
+				ByteBuffer bb = session.peekWriteQueue();
+				if (bb == null) {
+					session.getSelectionKey().interestOps(
+							session.getSelectionKey().interestOps()
+									& (~SelectionKey.OP_WRITE));
 					break;
 				}
-				if(bb.remaining()<=0){
+				if (bb.remaining() <= 0) {
+					bufferProvider.release(bb);
 					session.poolWriteQueue();
 					continue;
 				}
 				try {
-					 int bytes=socketChannel.write(bb);
-					 writed+=bytes;
-					if(bytes==0){
+					int bytes = socketChannel.write(bb);
+					writed += bytes;
+					if (bytes == 0) {
 						break;
 					}
 				} catch (IOException e) {
 					throw new ChannelException();
 				}
 			}
+			session.updateWriteTime();
+			session.updateWriteBytes(writed);
 			return writed;
 		default:
 			break;
 		}
 		return null;
 	}
+
+
 
 }

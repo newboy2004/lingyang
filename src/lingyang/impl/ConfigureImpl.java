@@ -1,11 +1,13 @@
 package lingyang.impl;
 
-import java.util.concurrent.TimeUnit;
+import java.nio.ByteBuffer;
 
 import lingyang.Event;
 import lingyang.Filter;
 import lingyang.Handler;
+import lingyang.NoSession;
 import lingyang.Processor;
+import lingyang.Schedule;
 import lingyang.Session;
 import lingyang.configure.Configure;
 import lingyang.configure.Strategy;
@@ -19,15 +21,16 @@ public class ConfigureImpl implements Configure {
 	Strategy strategy = Strategy.next;
 	HeadFilter headFilter = null;
 	TailFilter tailFilter = null;
-	TimeUnit idleUint = TimeUnit.MILLISECONDS;
 	int writeIdle = 0;
 	int receiveIdle = 0;
 	boolean usePool = false;
 	Processor processor;
+	long scheduleTimeOut=60*1000;
+	Schedule schedule;
 
 	public ConfigureImpl() {
-		HeadFilter headFilter = new HeadFilter();
-		TailFilter tailFilter = new TailFilter();
+		headFilter = new HeadFilter();
+		tailFilter = new TailFilter();
 		headFilter.setNext(tailFilter);
 		tailFilter.setBefore(headFilter);
 		processor = new SimpleProcessor();
@@ -49,7 +52,6 @@ public class ConfigureImpl implements Configure {
 	}
 
 	public void setSelectorNum(int num) {
-
 		selectorNum = num;
 	}
 
@@ -112,11 +114,6 @@ public class ConfigureImpl implements Configure {
 		this.writeIdle = timeSpan;
 	}
 
-	public void setIdleUnit(TimeUnit idleUnit) {
-		this.idleUint = idleUnit;
-
-	}
-
 	@Override
 	public Processor getProcessor() {
 		return processor;
@@ -140,18 +137,7 @@ public class ConfigureImpl implements Configure {
 		 * data is null
 		 */
 		public Object in(Session session, Object data) {
-//			ByteBuffer btb = session.getBuffer(ConfigureImpl.this.getBufferSize());
-//			btb.reset();
-//			try {
-//				while (((NetChannel) session)._read(btb) > 0) {
-//					btb.flip();
-//					next.in(session, btb);
-//					btb.reset();
-//				}
-//			} catch (IOException e) {
-//				next.onEvent(session, Event.err);
-//			}
-			return data;
+			return next.in(session, data);
 		}
 
 		public Filter next() {
@@ -163,11 +149,7 @@ public class ConfigureImpl implements Configure {
 		}
 
 		public Object out(Session session, Object data) {
-//			try {
-//				((NetChannel) session)._write((ByteBuffer) data);
-//			} catch (IOException e) {
-//				next.onEvent(session, Event.err);
-//			}
+			session._write((ByteBuffer)data);
 			return data;
 		}
 
@@ -177,6 +159,11 @@ public class ConfigureImpl implements Configure {
 
 		public void setNext(Filter filter) {
 			this.next = filter;
+		}
+
+		@Override
+		public void onNoSession(NoSession noSessionEvent) {
+			next.onNoSession(noSessionEvent);
 		}
 
 	}
@@ -221,7 +208,18 @@ public class ConfigureImpl implements Configure {
 		}
 
 		public Object out(Session session, Object data) {
-			return before.out(session, data);
+			handler.onWriteble(session);
+			//notifyHandler();
+			//用线程域变量
+			//ArrayList<ByteBuffer> bufs=new ArrayList<ByteBuffer>();
+			//for(;;){
+				Object message=session.poolOutPutMessage();
+				if(message==null)
+					return null;
+				return before.out(session, message);
+				//session._write((ByteBuffer)before.out(session, message));
+			//}
+			//return null;
 		}
 
 		public void setBefore(Filter filter) {
@@ -240,6 +238,31 @@ public class ConfigureImpl implements Configure {
 			return handler;
 		}
 
+		@Override
+		public void onNoSession(NoSession noSessionEvent) {
+			handler.onNoSession(noSessionEvent);
+		}
+
+	}
+
+	@Override
+	public Schedule getSchedule() {
+		return schedule;
+	}
+
+	@Override
+	public void setSchedule(Schedule schedule) {
+		this.schedule=schedule;
+	}
+
+	@Override
+	public long getScheduleTimeOut() {
+		return scheduleTimeOut;
+	}
+
+	@Override
+	public void setScheduleTimeOut(long scheduleTimeOut) {
+		this.scheduleTimeOut=scheduleTimeOut;
 	}
 
 }

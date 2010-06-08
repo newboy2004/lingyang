@@ -1,12 +1,9 @@
 package lingyang.configure;
 
-import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
-
 import lingyang.Filter;
 import lingyang.Handler;
 import lingyang.Processor;
-
+import lingyang.Schedule;
 
 public interface Configure {
 	public void setHandler(Handler handler);
@@ -38,19 +35,24 @@ public interface Configure {
 	public boolean usePool();
 
 	public void setUsePool(boolean use);
-	
-	public void setIdleUnit(TimeUnit idleUnit);
-	
+
 	public long getReceiveIdle();
-	
+
 	public void setReceiveIdle(int timeSpan);
-	
+
 	public long getWriteIdle();
-	
+
 	public void setWriteIdle(int timeSpan);
-	
+
 	public Processor getProcessor();
-	
+
 	public void setProcessor(Processor processor);
+
+	public void setSchedule(Schedule schedule);
+
+	public Schedule getSchedule();
 	
+	public long getScheduleTimeOut();
+	public void setScheduleTimeOut(long scheduleTimeOut);
+
 }

@@ -15,7 +15,6 @@ public abstract class FilterAdapter implements Filter {
 	}
 
 	public Filter next() {
-
 		return next;
 	}
 
@@ -46,7 +45,13 @@ public abstract class FilterAdapter implements Filter {
 	public Object out(Session session, Object data) {
 		return before.out(session, OnSend(session, data));
 	}
+	public void setNext(Filter filter){
+		this.next=filter;
+	}
 
+	public void setBefore(Filter filter){
+		this.before=filter;
+	}
 	public abstract Object OnRecive(Session session, Object data);
 
 	public abstract Object OnSend(Session session, Object data);

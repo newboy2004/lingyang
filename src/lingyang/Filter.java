@@ -6,6 +6,8 @@ public interface Filter {
 	public Object out(Session session, Object data);
 
 	public void onEvent(Session session, Event event);
+	
+	public void onNoSession(NoSession noSessionEvent);
 
 	public Filter next();
 

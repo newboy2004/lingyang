@@ -1,10 +1,10 @@
 package lingyang.Factory;
 
 import lingyang.Session;
-import lingyang.impl.DefaultSessionImpl;
+import lingyang.impl.SessionImpl;
 
 public class SessionFactory {
 	public static Session newSession(){
-		return new DefaultSessionImpl();
+		return new SessionImpl();
 	}
 }
