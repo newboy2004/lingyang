@@ -3,16 +3,17 @@ package demo;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import lingyang.Handler;
-import lingyang.NoSession;
-import lingyang.Service;
-import lingyang.Session;
-import lingyang.Factory.ConfigureFactory;
-import lingyang.Factory.ServiceFactory;
-import lingyang.configure.Configure;
-import lingyang.err.ChannelException;
-import lingyang.err.InitException;
-import lingyang.err.SelectorException;
+import com.googlecode.lingyang.Handler;
+import com.googlecode.lingyang.NoSession;
+import com.googlecode.lingyang.Service;
+import com.googlecode.lingyang.Session;
+import com.googlecode.lingyang.Factory.ConfigureFactory;
+import com.googlecode.lingyang.Factory.ServiceFactory;
+import com.googlecode.lingyang.configure.Configure;
+import com.googlecode.lingyang.err.ChannelException;
+import com.googlecode.lingyang.err.InitException;
+import com.googlecode.lingyang.err.SelectorException;
+
 
 class EchoHandler implements Handler{
 

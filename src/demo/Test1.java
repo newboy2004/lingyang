@@ -2,9 +2,10 @@ package demo;
 
 import java.io.IOException;
 
-import lingyang.Factory.ServiceFactory;
-import lingyang.err.ChannelException;
-import lingyang.err.SelectorException;
+import com.googlecode.lingyang.Factory.ServiceFactory;
+import com.googlecode.lingyang.err.ChannelException;
+import com.googlecode.lingyang.err.SelectorException;
+
 
 public class Test1 {
 
