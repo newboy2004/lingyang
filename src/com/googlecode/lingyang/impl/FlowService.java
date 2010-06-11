@@ -13,7 +13,9 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -29,7 +31,6 @@ import com.googlecode.lingyang.err.ChannelException;
 import com.googlecode.lingyang.err.ExceptionEvent;
 import com.googlecode.lingyang.err.InitException;
 
-
 public class FlowService implements Service {
 	ExecutorService executor = Executors.newCachedThreadPool();
 	Selector lisenSelector = null;
@@ -40,16 +41,16 @@ public class FlowService implements Service {
 	ArrayList<ConcurrentLinkedQueue<Session>> newSessions = null;
 	ArrayList<ConcurrentLinkedQueue<Session>> cancelSessions = null;
 	ArrayList<ConcurrentLinkedQueue<NoSession>> noSessions = null;
-
-	// ArrayList<ConcurrentLinkedQueue<Session>> connectingSessions = null;
-	boolean _run=true;
+	ConcurrentMap<Object, Object> attributes = new ConcurrentHashMap<Object, Object>();
+	boolean _run = true;
 	private ServiceStatistic serviceStatistic;
+
 	public FlowService() {
 		newSessions = new ArrayList<ConcurrentLinkedQueue<Session>>();
 		cancelSessions = new ArrayList<ConcurrentLinkedQueue<Session>>();
 		noSessions = new ArrayList<ConcurrentLinkedQueue<NoSession>>();
-		serviceStatistic=new ServiceStatistic();
-		serviceStatistic.startTime=System.currentTimeMillis();
+		serviceStatistic = new ServiceStatistic();
+		serviceStatistic.startTime = System.currentTimeMillis();
 	}
 
 	public void connectTo(String address, int port) throws ChannelException {
@@ -169,43 +170,67 @@ public class FlowService implements Service {
 			wakeUp(index);
 		}
 	}
+
 	@Override
 	public void _addReadBytes(long readBytes) {
-		serviceStatistic.totalReciveBytes+=readBytes;
+		serviceStatistic.totalReciveBytes += readBytes;
 	}
 
 	@Override
 	public void _addWriteBytes(long writeBytes) {
-		serviceStatistic.totalSendBytes+=writeBytes;
+		serviceStatistic.totalSendBytes += writeBytes;
 	}
+
 	@Override
 	public boolean isRunning() {
 		return this._run;
 	}
+
+	@Override
+	public void addAttr(Object attrName, Object value) {
+		attributes.put(attrName, value);
+	}
+
+	@Override
+	public void clearAttrs() {
+		attributes.clear();
+
+	}
+
+	@Override
+	public Object getAttr(Object attrName) {
+		return attributes.get(attrName);
+	}
+
+	@Override
+	public Object removeAttr(Object attrName) {
+		return attributes.remove(attrName);
+	}
+
 	@Override
 	public ServiceStatistic shutDown() {
-		_run=false;
+		_run = false;
 		try {
 			Thread.sleep(50);
 		} catch (InterruptedException e1) {
 		}
-		if(lisenSelector!=null&&lisenSelector.isOpen()){
+		if (lisenSelector != null && lisenSelector.isOpen()) {
 			try {
 				lisenSelector.close();
 			} catch (IOException e) {
 			}
 		}
-		if(sessions!=null){			
-			for(Session session:sessions){
+		if (sessions != null) {
+			for (Session session : sessions) {
 				try {
 					session._close();
 				} catch (ChannelException e) {
 				}
 			}
 		}
-		if(selectors!=null){		
-			for(Selector selector:selectors){
-				if(selector!=null&&selector.isOpen()){
+		if (selectors != null) {
+			for (Selector selector : selectors) {
+				if (selector != null && selector.isOpen()) {
 					try {
 						selector.close();
 					} catch (IOException e) {
@@ -214,14 +239,15 @@ public class FlowService implements Service {
 				}
 			}
 		}
-		if(pool!=null){
+		if (pool != null) {
 			pool.shutdown();
 		}
-		if(executor!=null){
+		if (executor != null) {
 			executor.shutdown();
 		}
 		return serviceStatistic;
 	}
+
 	class ListenWorker implements Runnable {
 		private int port;
 
@@ -328,6 +354,7 @@ public class FlowService implements Service {
 				}
 			} while (true);
 		}
+
 		/**
 		 * 
 		 */
@@ -341,7 +368,7 @@ public class FlowService implements Service {
 					session._close();
 					configure.getProcessor().onClose(session);
 				} catch (ChannelException e) {
-					
+
 				}
 			} while (true);
 		}
@@ -411,6 +438,4 @@ public class FlowService implements Service {
 			} while (_run);
 		}
 	}
-
-
 }
